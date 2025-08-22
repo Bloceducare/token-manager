@@ -100,39 +100,14 @@
 }
 
 @layer utilities {
-  .bg-dark-bg {
-    background-color: var(--dark-bg);
-  }
-  
-  .bg-dark-card {
-    background-color: var(--dark-card);
-  }
-  
-  .border-dark-border {
-    border-color: var(--dark-border);
-  }
-  
-  .text-optimism-red {
-    color: var(--optimism-red);
-  }
-  
-  .text-optimism-blue {
-    color: var(--optimism-blue);
-  }
-  
-  .bg-optimism-red {
-    background-color: var(--optimism-red);
-  }
-  
-  .bg-optimism-blue {
-    background-color: var(--optimism-blue);
-  }
-  
-  .from-optimism-red {
-    --tw-gradient-from: var(--optimism-red);
-  }
-  
-  .to-optimism-blue {
-    --tw-gradient-to: var(--optimism-blue);
-  }
+  .border-border { border-color: var(--border); }
+  .bg-dark-bg { background-color: var(--dark-bg); }
+  .bg-dark-card { background-color: var(--dark-card); }
+  .border-dark-border { border-color: var(--dark-border); }
+  .text-optimism-red { color: var(--optimism-red); }
+  .text-optimism-blue { color: var(--optimism-blue); }
+  .bg-optimism-red { background-color: var(--optimism-red); }
+  .bg-optimism-blue { background-color: var(--optimism-blue); }
+  .from-optimism-red { --tw-gradient-from: var(--optimism-red); }
+  .to-optimism-blue { --tw-gradient-to: var(--optimism-blue); }
 }
