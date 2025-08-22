@@ -1,6 +1,6 @@
 import { readContract, readContracts, writeContract } from 'wagmi/actions';
 import { parseUnits, formatUnits, isAddress } from 'viem';
-import { config, FACTORY_CONTRACT_ADDRESS, FACTORY_ABI, ROLEBASEDSBT_ABI } from './web3';
+import { config, FACTORY_CONTRACT_ADDRESS, FACTORY_ABI, ROLEBASEDSBT_ABI, publicClient } from './web3';
 import type { TokenInfo } from '@shared/schema';
 
 export class ContractService {
@@ -270,6 +270,105 @@ export class ContractService {
       console.error('Error creating role token:', error);
       throw new Error(`Failed to create role token: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  // Holders derived from Mint/Burn logs (balances reconstructed)
+  async getTokenHolders(tokenAddress: string): Promise<{ address: string; balance: string }[]> {
+    if (!isAddress(tokenAddress)) throw new Error('Invalid token address');
+
+    // Topics
+    // event Mint(address indexed to, uint256 amount);
+    // event Burn(address indexed from, uint256 amount);
+    const mintTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'; // placeholder, will decode via ABI below
+    // We will not rely on hardcoded topics; use ABI log decoding
+
+    const fromBlock = 0n; // can be optimized later
+    const toBlock = 'latest' as const;
+
+    const mintLogs = await publicClient.getLogs({
+      address: tokenAddress as `0x${string}`,
+      event: {
+        type: 'event',
+        name: 'Mint',
+        inputs: [
+          { indexed: true, name: 'to', type: 'address' },
+          { indexed: false, name: 'amount', type: 'uint256' },
+        ],
+      } as any,
+      fromBlock,
+      toBlock,
+    });
+
+    const burnLogs = await publicClient.getLogs({
+      address: tokenAddress as `0x${string}`,
+      event: {
+        type: 'event',
+        name: 'Burn',
+        inputs: [
+          { indexed: true, name: 'from', type: 'address' },
+          { indexed: false, name: 'amount', type: 'uint256' },
+        ],
+      } as any,
+      fromBlock,
+      toBlock,
+    });
+
+    // Aggregate balances
+    const balances = new Map<string, bigint>();
+
+    for (const log of mintLogs as any[]) {
+      const to = log.args?.to as string;
+      const amount = BigInt(log.args?.amount ?? 0n);
+      if (!to) continue;
+      balances.set(to, (balances.get(to) ?? 0n) + amount);
+    }
+
+    for (const log of burnLogs as any[]) {
+      const from = log.args?.from as string;
+      const amount = BigInt(log.args?.amount ?? 0n);
+      if (!from) continue;
+      balances.set(from, (balances.get(from) ?? 0n) - amount);
+    }
+
+    // Get decimals for formatting
+    const decimals = await readContract(config, {
+      address: tokenAddress as `0x${string}`,
+      abi: ROLEBASEDSBT_ABI,
+      functionName: 'decimals',
+    }) as number;
+
+    const holders = Array.from(balances.entries())
+      .filter(([, bal]) => bal > 0n)
+      .map(([addr, bal]) => ({ address: addr, balance: formatUnits(bal, decimals) }));
+
+    // Sort by balance desc
+    holders.sort((a, b) => parseFloat(b.balance) - parseFloat(a.balance));
+
+    return holders;
+  }
+
+  // Batch mint (sequential writes)
+  async batchMint(
+    tokenAddress: string,
+    mints: { to: string; amount: string }[],
+    decimals: number
+  ): Promise<string[]> {
+    if (!isAddress(tokenAddress)) throw new Error('Invalid token address');
+    if (!Array.isArray(mints) || mints.length === 0) throw new Error('Empty batch');
+
+    const txHashes: string[] = [];
+    for (const { to, amount } of mints) {
+      if (!isAddress(to)) throw new Error(`Invalid address: ${to}`);
+      const parsed = parseUnits(amount, decimals);
+      const hash = await writeContract(config, {
+        address: tokenAddress as `0x${string}`,
+        abi: ROLEBASEDSBT_ABI,
+        functionName: 'mint',
+        args: [to as `0x${string}`, parsed],
+      });
+      txHashes.push(hash);
+    }
+    return txHashes;
   }
 }
 

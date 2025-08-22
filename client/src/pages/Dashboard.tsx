@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { WalletConnect } from '@/components/WalletConnect';
 import { TokenList } from '@/components/TokenList';
-import { SendTokenModal } from '@/components/SendTokenModal';
-import { ApproveTokenModal } from '@/components/ApproveTokenModal';
 import { TransactionHistory } from '@/components/TransactionHistory';
 import { FactorySidebar } from '@/components/FactorySidebar';
 import { StatsCards } from '@/components/StatsCards';
@@ -10,19 +8,13 @@ import { Coins, Wifi } from 'lucide-react';
 import type { TokenInfo } from '@shared/schema';
 
 export default function Dashboard() {
-  const [selectedTokenForSend, setSelectedTokenForSend] = useState<TokenInfo | null>(null);
-  const [selectedTokenForApprove, setSelectedTokenForApprove] = useState<TokenInfo | null>(null);
-  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
-  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
-
+  // Placeholder handlers for backward compatibility
   const handleSendToken = (token: TokenInfo) => {
-    setSelectedTokenForSend(token);
-    setIsSendModalOpen(true);
+    // This is now handled within TokenList component
   };
 
   const handleApproveToken = (token: TokenInfo) => {
-    setSelectedTokenForApprove(token);
-    setIsApproveModalOpen(true);
+    // This is now handled within TokenList component
   };
 
   return (
@@ -36,7 +28,7 @@ export default function Dashboard() {
                 <div className="w-8 h-8 bg-gradient-to-r from-optimism-red to-optimism-blue rounded-lg flex items-center justify-center">
                   <Coins className="text-white h-5 w-5" />
                 </div>
-                <h1 className="text-xl font-bold text-white">OptimismDeFi</h1>
+                <h1 className="text-xl font-bold text-white">Role-Based Token Manager</h1>
               </div>
               <div className="hidden md:flex items-center space-x-1 bg-dark-bg rounded-lg p-1">
                 <span className="bg-optimism-red/10 text-optimism-red px-3 py-1 rounded text-sm font-medium">
@@ -86,18 +78,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Modals */}
-      <SendTokenModal
-        isOpen={isSendModalOpen}
-        onClose={() => setIsSendModalOpen(false)}
-        token={selectedTokenForSend}
-      />
-
-      <ApproveTokenModal
-        isOpen={isApproveModalOpen}
-        onClose={() => setIsApproveModalOpen(false)}
-        token={selectedTokenForApprove}
-      />
+      {/* Modals are now handled within individual components */}
     </div>
   );
 }

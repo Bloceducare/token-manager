@@ -1,6 +1,7 @@
 import { http, createConfig } from 'wagmi';
 import { optimism } from 'wagmi/chains';
 import { injected, metaMask, walletConnect } from 'wagmi/connectors';
+import { createPublicClient } from 'viem';
 
 // Fallback if wagmi/chains import fails
 const optimismFallback = {
@@ -45,3 +46,9 @@ export { FACTORY_ABI, ROLEBASEDSBT_ABI } from './abis';
 // Legacy export for compatibility - using import syntax to fix reference
 import { ROLEBASEDSBT_ABI } from './abis';
 export const ERC20_ABI = ROLEBASEDSBT_ABI;
+
+// Public client for read-only blockchain operations (logs/events)
+export const publicClient = createPublicClient({
+  chain: optimismChain as any,
+  transport: http(),
+});
