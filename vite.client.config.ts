@@ -1,10 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
 export default defineConfig({
-  plugins: [react(), runtimeErrorOverlay()],
+  plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'client', 'src'),
@@ -16,6 +15,15 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, 'client', 'dist'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  base: '/',
+  css: {
+    postcss: path.resolve(__dirname, 'client', 'postcss.config.js'),
   },
   server: {
     fs: { strict: true, deny: ['**/.*'] },
