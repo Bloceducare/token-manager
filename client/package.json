@@ -1,0 +1,9 @@
+{
+  "name": "token-manager-client",
+  "private": true,
+  "scripts": {
+    "build": "vite --config ../vite.client.config.ts build",
+    "dev": "vite --config ../vite.client.config.ts",
+    "preview": "vite --config ../vite.client.config.ts preview --port 4173"
+  }
+}

@@ -70,12 +70,29 @@ A comprehensive web application for managing Role-Based Soulbound Tokens (SBTs) 
    - Ensure you're connected to Optimism Mainnet
    - Factory owner can create tokens, token owners can mint/burn
 
+## Deploying to Vercel (Static Frontend)
+
+This repo includes an Express server that is not needed on Vercel. To deploy the static client only:
+
+1. Ensure these files exist (added):
+   - `vite.client.config.ts` (client-only Vite config)
+   - `client/package.json` with build scripts
+   - `vercel.json` configured to serve `client/dist`
+
+2. In Vercel Project Settings:
+   - Framework Preset: Other
+   - Build Command: `npm --prefix client run build`
+   - Output Directory: `client/dist`
+
+3. Environment variables (if any) should be added in Vercel dashboard.
+
 ## Usage
 
 ### For Administrators
 1. **Create Role Token**: Use the "Create Token" button in the sidebar
 2. **Mint Tokens**: Select a token and click "Mint" to issue tokens to students
 3. **Burn Tokens**: Select a token and click "Burn" to remove tokens from students
+4. **Batch Mint**: Use "Batch Mint" to paste addresses and a single amount
 
 ### For Students
 - View your token balances
