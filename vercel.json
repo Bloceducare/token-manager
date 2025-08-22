@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "client/index.html", "use": "@vercel/static-build", "config": { "distDir": "client/dist" } }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "framework": null
+  "framework": null,
+  "buildCommand": "npm --prefix client run build",
+  "outputDirectory": "client/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
