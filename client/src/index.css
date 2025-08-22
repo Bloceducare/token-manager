@@ -101,6 +101,12 @@
   .border-border { border-color: var(--border); }
   .bg-background { background-color: var(--background); }
   .text-foreground { color: var(--foreground); }
+  .bg-popover { background-color: var(--popover); }
+  .text-popover-foreground { color: var(--popover-foreground); }
+  .bg-accent { background-color: var(--accent); }
+  .text-accent-foreground { color: var(--accent-foreground); }
+  .bg-muted { background-color: var(--muted); }
+  .text-muted-foreground { color: var(--muted-foreground); }
   .bg-dark-bg { background-color: var(--dark-bg); }
   .bg-dark-card { background-color: var(--dark-card); }
   .border-dark-border { border-color: var(--dark-border); }
@@ -110,4 +116,19 @@
   .bg-optimism-blue { background-color: var(--optimism-blue); }
   .from-optimism-red { --tw-gradient-from: var(--optimism-red); }
   .to-optimism-blue { --tw-gradient-to: var(--optimism-blue); }
+}
+
+/* Ensure dark theme is applied globally */
+html {
+  @apply dark;
+}
+
+/* Radix UI Portal styles for dropdowns */
+[data-radix-portal] {
+  z-index: 9999;
+}
+
+/* Ensure dropdown content is visible in dark theme */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999;
 }

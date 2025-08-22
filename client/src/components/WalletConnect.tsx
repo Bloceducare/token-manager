@@ -44,12 +44,12 @@ export function WalletConnect() {
             <ChevronDown className="h-4 w-4 ml-2" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-56 bg-dark-card border-dark-border">
           {connectors.map((connector) => (
             <DropdownMenuItem
               key={connector.id}
               onClick={() => connect({ connector })}
-              className="cursor-pointer"
+              className="cursor-pointer text-white hover:bg-dark-bg focus:bg-dark-bg"
               data-testid={`button-connect-${connector.name.toLowerCase()}`}
             >
               <Wallet className="h-4 w-4 mr-2" />
@@ -66,7 +66,7 @@ export function WalletConnect() {
       <DropdownMenuTrigger asChild>
         <Button 
           variant="outline" 
-          className="bg-dark-card border-dark-border hover:bg-dark-bg"
+          className="bg-dark-card border-dark-border hover:bg-dark-bg text-white"
           data-testid="button-wallet-menu"
         >
           <Wallet className="h-4 w-4 mr-2" />
@@ -74,8 +74,12 @@ export function WalletConnect() {
           <ChevronDown className="h-4 w-4 ml-2" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuItem onClick={copyAddress} data-testid="button-copy-address">
+      <DropdownMenuContent align="end" className="w-56 bg-dark-card border-dark-border">
+        <DropdownMenuItem 
+          onClick={copyAddress} 
+          className="text-white hover:bg-dark-bg focus:bg-dark-bg cursor-pointer"
+          data-testid="button-copy-address"
+        >
           <Copy className="h-4 w-4 mr-2" />
           Copy Address
         </DropdownMenuItem>
@@ -84,17 +88,17 @@ export function WalletConnect() {
             href={`https://optimistic.etherscan.io/address/${address}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="cursor-pointer"
+            className="cursor-pointer text-white hover:bg-dark-bg focus:bg-dark-bg flex items-center"
             data-testid="link-view-explorer"
           >
             <ExternalLink className="h-4 w-4 mr-2" />
             View on Explorer
           </a>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="bg-dark-border" />
         <DropdownMenuItem 
           onClick={() => disconnect()}
-          className="text-red-400 cursor-pointer"
+          className="text-red-400 hover:bg-dark-bg focus:bg-dark-bg cursor-pointer"
           data-testid="button-disconnect"
         >
           <LogOut className="h-4 w-4 mr-2" />
