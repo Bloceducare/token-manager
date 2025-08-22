@@ -1,7 +1,4 @@
-// Mock wallet hooks for development
-const useAccount = () => ({ address: null, isConnected: false });
-const useConnect = () => ({ connect: () => {}, connectors: [], isPending: false });
-const useDisconnect = () => ({ disconnect: () => {} });
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Wallet, ChevronDown, Copy, ExternalLink, LogOut } from 'lucide-react';
 import {

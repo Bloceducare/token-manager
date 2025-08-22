@@ -1,48 +1,18 @@
-// Simplified contract service for development
-import { config, FACTORY_CONTRACT_ADDRESS, FACTORY_ABI, ERC20_ABI } from './web3';
+import { readContract, readContracts, writeContract } from 'wagmi/actions';
+import { parseUnits, formatUnits, isAddress } from 'viem';
+import { config, FACTORY_CONTRACT_ADDRESS, FACTORY_ABI, ROLEBASEDSBT_ABI } from './web3';
 import type { TokenInfo } from '@shared/schema';
-
-// Mock implementations for development
-const parseUnits = (value: string, decimals: number): bigint => {
-  return BigInt(Math.floor(parseFloat(value) * Math.pow(10, decimals)));
-};
-
-const formatUnits = (value: bigint, decimals: number): string => {
-  return (Number(value) / Math.pow(10, decimals)).toString();
-};
-
-const isAddress = (address: string): boolean => {
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
-};
 
 export class ContractService {
   
   async getFactoryTokens(): Promise<string[]> {
     try {
-      // Get total number of tokens created by factory
-      const totalTokens = await readContract(config, {
+      // Use the getAllTokens function from the factory contract
+      const tokenAddresses = await readContract(config, {
         address: FACTORY_CONTRACT_ADDRESS,
         abi: FACTORY_ABI,
-        functionName: 'allTokensLength',
-      }) as bigint;
-
-      const tokenAddresses: string[] = [];
-      
-      // Fetch all token addresses
-      for (let i = 0; i < Number(totalTokens); i++) {
-        try {
-          const tokenAddress = await readContract(config, {
-            address: FACTORY_CONTRACT_ADDRESS,
-            abi: FACTORY_ABI,
-            functionName: 'allTokens',
-            args: [BigInt(i)],
-          }) as string;
-          
-          tokenAddresses.push(tokenAddress);
-        } catch (error) {
-          console.error(`Error fetching token at index ${i}:`, error);
-        }
-      }
+        functionName: 'getAllTokens',
+      }) as string[];
 
       return tokenAddresses;
     } catch (error) {
@@ -61,23 +31,28 @@ export class ContractService {
       const contracts = [
         {
           address: tokenAddress as `0x${string}`,
-          abi: ERC20_ABI,
+          abi: ROLEBASEDSBT_ABI,
           functionName: 'name',
         },
         {
           address: tokenAddress as `0x${string}`,
-          abi: ERC20_ABI,
+          abi: ROLEBASEDSBT_ABI,
           functionName: 'symbol',
         },
         {
           address: tokenAddress as `0x${string}`,
-          abi: ERC20_ABI,
+          abi: ROLEBASEDSBT_ABI,
           functionName: 'decimals',
         },
         {
           address: tokenAddress as `0x${string}`,
-          abi: ERC20_ABI,
+          abi: ROLEBASEDSBT_ABI,
           functionName: 'totalSupply',
+        },
+        {
+          address: tokenAddress as `0x${string}`,
+          abi: ROLEBASEDSBT_ABI,
+          functionName: 'role',
         },
       ];
 
@@ -85,9 +60,9 @@ export class ContractService {
       if (userAddress && isAddress(userAddress)) {
         contracts.push({
           address: tokenAddress as `0x${string}`,
-          abi: ERC20_ABI,
+          abi: ROLEBASEDSBT_ABI,
           functionName: 'balanceOf',
-          args: [userAddress],
+          args: [userAddress as `0x${string}`],
         } as any);
       }
 
@@ -95,12 +70,13 @@ export class ContractService {
         contracts: contracts as any,
       });
 
-      const [nameResult, symbolResult, decimalsResult, totalSupplyResult, balanceResult] = results;
+      const [nameResult, symbolResult, decimalsResult, totalSupplyResult, roleResult, balanceResult] = results;
 
       if (nameResult.status === 'failure' || 
           symbolResult.status === 'failure' || 
           decimalsResult.status === 'failure' ||
-          totalSupplyResult.status === 'failure') {
+          totalSupplyResult.status === 'failure' ||
+          roleResult.status === 'failure') {
         throw new Error('Failed to fetch token information');
       }
 
@@ -108,6 +84,7 @@ export class ContractService {
       const symbol = symbolResult.result as string;
       const decimals = Number(decimalsResult.result);
       const totalSupply = totalSupplyResult.result as bigint;
+      const role = roleResult.result as string;
       
       let balance = '0';
       if (balanceResult && balanceResult.status === 'success') {
@@ -121,6 +98,7 @@ export class ContractService {
         decimals,
         totalSupply: formatUnits(totalSupply, decimals),
         balance,
+        role,
       };
     } catch (error) {
       console.error('Error fetching token info:', error);
@@ -141,9 +119,11 @@ export class ContractService {
     try {
       const parsedAmount = parseUnits(amount, decimals);
       
+      // Note: RoleBasedSBT tokens are soulbound - transfers are disabled
+      // This will always fail for soulbound tokens
       const hash = await writeContract(config, {
         address: tokenAddress as `0x${string}`,
-        abi: ERC20_ABI,
+        abi: ROLEBASEDSBT_ABI,
         functionName: 'transfer',
         args: [to as `0x${string}`, parsedAmount],
       });
@@ -170,9 +150,11 @@ export class ContractService {
         ? BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
         : parseUnits(amount, decimals);
       
+      // Note: RoleBasedSBT tokens are soulbound - approvals are disabled
+      // This will always fail for soulbound tokens
       const hash = await writeContract(config, {
         address: tokenAddress as `0x${string}`,
-        abi: ERC20_ABI,
+        abi: ROLEBASEDSBT_ABI,
         functionName: 'approve',
         args: [spender as `0x${string}`, parsedAmount],
       });
@@ -196,7 +178,7 @@ export class ContractService {
     try {
       const allowance = await readContract(config, {
         address: tokenAddress as `0x${string}`,
-        abi: ERC20_ABI,
+        abi: ROLEBASEDSBT_ABI,
         functionName: 'allowance',
         args: [owner as `0x${string}`, spender as `0x${string}`],
       }) as bigint;
@@ -204,7 +186,7 @@ export class ContractService {
       // Get token decimals to format the allowance
       const decimals = await readContract(config, {
         address: tokenAddress as `0x${string}`,
-        abi: ERC20_ABI,
+        abi: ROLEBASEDSBT_ABI,
         functionName: 'decimals',
       }) as number;
 
@@ -212,6 +194,81 @@ export class ContractService {
     } catch (error) {
       console.error('Error fetching allowance:', error);
       throw new Error(`Failed to fetch allowance: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // New methods for role-based functionality
+  async mintTokens(
+    tokenAddress: string,
+    to: string,
+    amount: string,
+    decimals: number
+  ): Promise<string> {
+    if (!isAddress(tokenAddress) || !isAddress(to)) {
+      throw new Error('Invalid address provided');
+    }
+
+    try {
+      const parsedAmount = parseUnits(amount, decimals);
+      
+      const hash = await writeContract(config, {
+        address: tokenAddress as `0x${string}`,
+        abi: ROLEBASEDSBT_ABI,
+        functionName: 'mint',
+        args: [to as `0x${string}`, parsedAmount],
+      });
+
+      return hash;
+    } catch (error) {
+      console.error('Error minting tokens:', error);
+      throw new Error(`Failed to mint tokens: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async burnTokens(
+    tokenAddress: string,
+    from: string,
+    amount: string,
+    decimals: number
+  ): Promise<string> {
+    if (!isAddress(tokenAddress) || !isAddress(from)) {
+      throw new Error('Invalid address provided');
+    }
+
+    try {
+      const parsedAmount = parseUnits(amount, decimals);
+      
+      const hash = await writeContract(config, {
+        address: tokenAddress as `0x${string}`,
+        abi: ROLEBASEDSBT_ABI,
+        functionName: 'burn',
+        args: [from as `0x${string}`, parsedAmount],
+      });
+
+      return hash;
+    } catch (error) {
+      console.error('Error burning tokens:', error);
+      throw new Error(`Failed to burn tokens: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async createRoleToken(
+    name: string,
+    symbol: string,
+    role: string
+  ): Promise<string> {
+    try {
+      const hash = await writeContract(config, {
+        address: FACTORY_CONTRACT_ADDRESS,
+        abi: FACTORY_ABI,
+        functionName: 'createRoleToken',
+        args: [name, symbol, role],
+      });
+
+      return hash;
+    } catch (error) {
+      console.error('Error creating role token:', error);
+      throw new Error(`Failed to create role token: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

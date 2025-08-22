@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-// Mock wallet hook for development
-const useAccount = () => ({ address: null });
+import { useAccount } from 'wagmi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RefreshCw, Download, ExternalLink, Copy } from 'lucide-react';
-// import { contractService } from '@/lib/contracts';
+import { contractService } from '@/lib/contracts';
 import { FACTORY_CONTRACT_ADDRESS } from '@/lib/web3';
 import { useToast } from '@/hooks/use-toast';
 
@@ -13,15 +12,36 @@ export function FactorySidebar() {
   const { address } = useAccount();
   const { toast } = useToast();
 
-  // Mock factory data for display
-  const factoryData = {
-    factoryAddress: FACTORY_CONTRACT_ADDRESS,
-    totalTokens: 15,
-    userHoldings: '125.38',
-    tokenAddresses: [],
-  };
-  const isLoading = false;
-  const refetch = () => {};
+  const { data: factoryData, isLoading, refetch } = useQuery({
+    queryKey: ['/api/factory-info', address],
+    queryFn: async () => {
+      const tokenAddresses = await contractService.getFactoryTokens();
+      
+      let userHoldings = 0;
+      
+      if (address) {
+        const tokenPromises = tokenAddresses.map(addr => 
+          contractService.getTokenInfo(addr, address)
+        );
+        const tokens = await Promise.all(tokenPromises);
+        
+        tokens.forEach(token => {
+          const balance = parseFloat(token.balance);
+          if (balance > 0) {
+            userHoldings += balance * 0.5;
+          }
+        });
+      }
+
+      return {
+        factoryAddress: FACTORY_CONTRACT_ADDRESS,
+        totalTokens: tokenAddresses.length,
+        userHoldings: userHoldings.toFixed(2),
+        tokenAddresses,
+      };
+    },
+    enabled: !!address,
+  });
 
   const copyFactoryAddress = () => {
     navigator.clipboard.writeText(FACTORY_CONTRACT_ADDRESS);

@@ -1,8 +1,9 @@
-// Simplified Web3 configuration for development
-// Note: This is a minimal setup without full wagmi/viem integration
+import { http, createConfig } from 'wagmi';
+import { optimism } from 'wagmi/chains';
+import { injected, metaMask, walletConnect } from 'wagmi/connectors';
 
-// Define Optimism chain manually
-export const optimism = {
+// Fallback if wagmi/chains import fails
+const optimismFallback = {
   id: 10,
   name: 'OP Mainnet',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
@@ -12,119 +13,35 @@ export const optimism = {
   blockExplorers: {
     default: { name: 'Optimistic Etherscan', url: 'https://optimistic.etherscan.io' },
   },
-};
+} as const;
 
-// Mock config for development
-export const config = {
-  chains: [optimism],
-  connectors: [],
-  transports: {},
-};
+// Get project ID from environment variables
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+
+// Use optimism from wagmi/chains or fallback
+const optimismChain = typeof optimism !== 'undefined' ? optimism : optimismFallback;
+
+export const config = createConfig({
+  chains: [optimismChain],
+  connectors: [
+    injected(),
+    metaMask(),
+    ...(projectId ? [walletConnect({ projectId })] : []),
+  ],
+  transports: {
+    [optimismChain.id]: http(),
+  },
+});
+
+// Export optimism chain for use in components
+export { optimismChain as optimism };
 
 // Factory contract address on Optimism mainnet
 export const FACTORY_CONTRACT_ADDRESS = '0x270b62Cd3bCa5a62307Fa182F974DBbF2E009c9A' as const;
 
-// Standard ERC20 ABI
-export const ERC20_ABI = [
-  {
-    constant: true,
-    inputs: [],
-    name: 'name',
-    outputs: [{ name: '', type: 'string' }],
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'symbol',
-    outputs: [{ name: '', type: 'string' }],
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'decimals',
-    outputs: [{ name: '', type: 'uint8' }],
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'totalSupply',
-    outputs: [{ name: '', type: 'uint256' }],
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [{ name: 'owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    name: 'allowance',
-    outputs: [{ name: '', type: 'uint256' }],
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'value', type: 'uint256' },
-    ],
-    name: 'transfer',
-    outputs: [{ name: '', type: 'bool' }],
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'value', type: 'uint256' },
-    ],
-    name: 'approve',
-    outputs: [{ name: '', type: 'bool' }],
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: 'from', type: 'address' },
-      { name: 'to', type: 'address' },
-      { name: 'value', type: 'uint256' },
-    ],
-    name: 'transferFrom',
-    outputs: [{ name: '', type: 'bool' }],
-    type: 'function',
-  },
-] as const;
+// Re-export ABIs from the dedicated abis file
+export { FACTORY_ABI, ROLEBASEDSBT_ABI } from './abis';
 
-// Basic factory ABI to get created tokens
-export const FACTORY_ABI = [
-  {
-    inputs: [{ name: 'index', type: 'uint256' }],
-    name: 'allTokens',
-    outputs: [{ name: '', type: 'address' }],
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'allTokensLength',
-    outputs: [{ name: '', type: 'uint256' }],
-    type: 'function',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'token', type: 'address' },
-      { indexed: true, name: 'creator', type: 'address' },
-    ],
-    name: 'TokenCreated',
-    type: 'event',
-  },
-] as const;
+// Legacy export for compatibility - using import syntax to fix reference
+import { ROLEBASEDSBT_ABI } from './abis';
+export const ERC20_ABI = ROLEBASEDSBT_ABI;

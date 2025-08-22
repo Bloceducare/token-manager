@@ -9,9 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Send } from 'lucide-react';
-// import { contractService } from '@/lib/contracts';
-// Mock isAddress function
-const isAddress = (address: string) => /^0x[a-fA-F0-9]{40}$/.test(address);
+import { contractService } from '@/lib/contracts';
+import { isAddress } from 'viem';
 import type { TokenInfo } from '@shared/schema';
 
 const sendTokenSchema = z.object({
@@ -46,14 +45,34 @@ export function SendTokenModal({ isOpen, onClose, token }: SendTokenModalProps) 
     },
   });
 
-  // Mock mutation for demo
-  const sendMutation = {
-    mutateAsync: async (data: SendTokenFormData) => {
-      // Simulate transaction
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return '0xabcdef1234567890';
-    }
-  };
+  const sendMutation = useMutation({
+    mutationFn: async (data: SendTokenFormData) => {
+      if (!token) throw new Error('No token selected');
+      
+      return contractService.transferToken(
+        token.address,
+        data.recipient,
+        data.amount,
+        token.decimals
+      );
+    },
+    onSuccess: (hash) => {
+      toast({
+        title: 'Transaction submitted',
+        description: `Transaction hash: ${hash.slice(0, 10)}...`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/tokens'] });
+      onClose();
+      form.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Transaction failed',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const onSubmit = async (data: SendTokenFormData) => {
     if (!token) return;

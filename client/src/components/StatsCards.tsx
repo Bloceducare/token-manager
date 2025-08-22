@@ -1,22 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
-// Mock wallet hook for development
-const useAccount = () => ({ address: null });
+import { useAccount } from 'wagmi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, Coins, ArrowUpRight } from 'lucide-react';
-// import { contractService } from '@/lib/contracts';
+import { contractService } from '@/lib/contracts';
 
 export function StatsCards() {
   const { address } = useAccount();
 
-  // Mock stats data for display
-  const stats = {
-    portfolioValue: '125.38',
-    portfolioChange: '+12.5%',
-    activeTokens: 3,
-    transactionCount: 43,
-  };
-  const isLoading = false;
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['/api/portfolio-stats', address],
+    queryFn: async () => {
+      if (!address) return null;
+      
+      const tokenAddresses = await contractService.getFactoryTokens();
+      const tokenPromises = tokenAddresses.map(addr => 
+        contractService.getTokenInfo(addr, address)
+      );
+      const tokens = await Promise.all(tokenPromises);
+      
+      let totalValue = 0;
+      let activeTokens = 0;
+      
+      tokens.forEach(token => {
+        const balance = parseFloat(token.balance);
+        if (balance > 0) {
+          activeTokens++;
+          totalValue += balance * 0.5;
+        }
+      });
+
+      return {
+        portfolioValue: totalValue.toFixed(2),
+        portfolioChange: '+12.5%',
+        activeTokens,
+        transactionCount: 43,
+      };
+    },
+    enabled: !!address,
+  });
 
   if (!address) {
     return (

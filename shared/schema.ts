@@ -65,6 +65,7 @@ export interface TokenInfo {
   decimals: number;
   totalSupply: string;
   balance: string;
+  role?: string;
   usdValue?: string;
 }
 

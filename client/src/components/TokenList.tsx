@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-// Mock wallet hook for development
-const useAccount = () => ({ address: null });
+import { useAccount } from 'wagmi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, Send, Check, Plus } from 'lucide-react';
-// import { contractService } from '@/lib/contracts';
+import { contractService } from '@/lib/contracts';
 import type { TokenInfo } from '@shared/schema';
 import { useState } from 'react';
 
@@ -19,30 +18,22 @@ export function TokenList({ onSendToken, onApproveToken }: TokenListProps) {
   const { address } = useAccount();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data for display
-  const tokens = [
-    {
-      address: '0x1234567890123456789012345678901234567890',
-      name: 'Example Token',
-      symbol: 'EXT',
-      decimals: 18,
-      totalSupply: '1000000',
-      balance: '250.75',
+  const { data: tokens, isLoading, error, refetch } = useQuery({
+    queryKey: ['/api/tokens', address],
+    queryFn: async () => {
+      if (!address) return [];
+      
+      const tokenAddresses = await contractService.getFactoryTokens();
+      const tokenPromises = tokenAddresses.map(addr => 
+        contractService.getTokenInfo(addr, address)
+      );
+      
+      return Promise.all(tokenPromises);
     },
-    {
-      address: '0x9876543210987654321098765432109876543210',
-      name: 'Demo Coin',
-      symbol: 'DMC',
-      decimals: 18,
-      totalSupply: '500000',
-      balance: '0.00',
-    },
-  ];
-  const isLoading = false;
-  const error = null;
-  const refetch = () => {};
+    enabled: !!address,
+  });
 
-  const filteredTokens = tokens.filter(token => 
+  const filteredTokens = (tokens || []).filter(token => 
     token.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     token.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
     token.address.toLowerCase().includes(searchTerm.toLowerCase())
